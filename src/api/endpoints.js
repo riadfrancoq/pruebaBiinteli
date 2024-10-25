@@ -71,28 +71,43 @@ export const journeyManager = async (req, res) => {
 try {
     const {DepartureStation, ArrivalStation} = req.body;
 
-    const flights = await flight.findAll({
-        where: {
-            DepartureStation
-        },
-        include: [{
-            model: flight, 
-            as: 'connections',
+
+    const searchJourney = await journey.findOne({ where: { origin: DepartureStation, destination: ArrivalStation } });
+
+    if (searchJourney.length === 0) { 
+
+        const flights = await flight.findAll({
             where: {
-                DepartureStation: {
-                    [Op.ne]: DepartureStation, 
-                },
-                ArrivalStation
-            },
-            required: false, 
-            include: {
-                model: transport,
-                attributes: ['FlightCarrier', 'FlightNumber'],
+                origin: DepartureStation,
+                destination: ArrivalStation
             }
-        }],
-    });
-    return res.status(200).json({
-        result: flights});
+        });
+        
+    } else {
+        const journeyData = await journey.findAll({
+            include: [
+                {
+                    model: JourneyFlight,
+                    as: "JourneyFlights",
+                    include: {
+                        model: flight,
+                        as: "flight_flight",
+                        attributes: ["origin", "destination", "price"]
+                    }
+                }
+            ]
+        });
+
+        res.status(200).json({
+            result: journeyData
+        });
+    }
+
+    
+   
+
+
+
 } catch (error) {
     console.log(error);
     res.status(404).json({

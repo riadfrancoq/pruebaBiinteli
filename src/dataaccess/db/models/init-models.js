@@ -17,7 +17,6 @@ export default function initModels(sequelize) {
   journey.hasMany(JourneyFlight, { as: "JourneyFlights", foreignKey: "journey"});
   flight.belongsTo(transport, { as: "transport_transport", foreignKey: "transport"});
   transport.hasMany(flight, { as: "flights", foreignKey: "transport"});
-
   return {
     JourneyFlight,
     flight,
