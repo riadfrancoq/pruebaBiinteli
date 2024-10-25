@@ -1,6 +1,7 @@
 import axios from "axios";
 import db from "../dataaccess/db/db.js";
 import { fn, col, literal, Op } from "sequelize";
+import { raw } from "mysql2";
 const {tables} = db;
 const { JourneyFlight , journey , flight , transport } = tables;
 
@@ -72,17 +73,58 @@ try {
     const {DepartureStation, ArrivalStation} = req.body;
 
 
-    const searchJourney = await journey.findOne({ where: { origin: DepartureStation, destination: ArrivalStation } });
-
+    const searchJourney = await journey.findAll({ where: { origin: DepartureStation, destination: ArrivalStation } });
     if (searchJourney.length === 0) { 
 
         const flights = await flight.findAll({
             where: {
                 origin: DepartureStation,
                 destination: ArrivalStation
-            }
+            },
+            raw: true
         });
-        
+        if (flights.length === 1) {
+
+            const createJourney = await journey.create({
+                origin: DepartureStation,
+                destination: ArrivalStation,
+                price: flights[0].price
+            }, {validate: true});
+            const newJourneyData = createJourney.dataValues;
+
+            const createJourneyFlight = await JourneyFlight.create({
+                journey: newJourneyData.id,
+                flight: flights[0].id
+            }, {validate: true});
+
+            const showJourney = await journey.findAll({
+                include: [
+                    {
+                        model: JourneyFlight,
+                        as: "JourneyFlights",
+                        include: {
+                            model: flight,
+                            as: "flight_flight",
+                            attributes: ["origin", "destination", "price"],
+                            include: {
+                                model: transport,
+                                as: "transport_transport"
+                            }
+                        }
+                    }
+                ],
+                raw: true
+            });
+
+            return res.status(200).json({
+                message: "Vuelo encontrado Satisfacoriamente",
+                result: showJourney
+            })
+
+        } else {
+            
+        }
+
     } else {
         const journeyData = await journey.findAll({
             include: [
@@ -92,7 +134,11 @@ try {
                     include: {
                         model: flight,
                         as: "flight_flight",
-                        attributes: ["origin", "destination", "price"]
+                        attributes: ["origin", "destination", "price"],
+                        include: {
+                            model: transport,
+                            as: "transport_transport"
+                        }
                     }
                 }
             ]
