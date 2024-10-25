@@ -84,6 +84,7 @@ try {
             raw: true
         });
         if (flights.length === 1) {
+            console.log('Me estoy ejecutando aqui 1');
 
             const createJourney = await journey.create({
                 origin: DepartureStation,
@@ -122,10 +123,23 @@ try {
             })
 
         } else {
+            const searchScale = await flight.findAll({
+                where: {
+                destination: { [Op.not]: DepartureStation }
+            },
+            raw: true
+        });
+
+
+        for (let index = 0; index < array.length; index++) {
+            const element = array[index];
             
         }
 
+        }
+
     } else {
+        console.log('Me estoy ejecutando aqui');
         const journeyData = await journey.findAll({
             include: [
                 {
